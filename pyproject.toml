@@ -1,0 +1,23 @@
+[build-system] 
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+
+[project] 
+name = "dexed-tweaks"
+version = "0.0.4" 
+authors = [ { name="MajorCadence", email="mjc@majorcadencetech.org" }, ] 
+description = "A package that allows the user control over Dexed parameters and carts via python" 
+readme = "README.md" 
+license = {file = "LICENSE"}
+requires-python = ">=3.13" 
+classifiers = [ "Programming Language :: Python :: 3", 
+			"Operating System :: OS Independent", 
+			"Development Status :: 1 - Planning" ,
+			" Topic :: Multimedia :: Sound/Audio :: MIDI" ]
+
+dependencies = [ "python-rtmidi" ]
+
+[project.urls] 
+Homepage = "https://github.com/majorcadence/Dexed-tweaks"
+Issues = "https://github.com/majorcadence/Dexed-tweaks/issues"

@@ -2,11 +2,33 @@
 # dexed-tweaks: A python library for interfacing with Dexed
 # Created by MajorCadence 
 # (Partially based on code from Waveform.AI project)
+# GPL-3.0 License
 
 import rtmidi
+from typing import Optional
 
-def midi_connection():
-    pass
+def midi_connection(name: str, virtual: bool = True, number: int = 0, client_name: Optional[str] = None, API: int = rtmidi.API_LINUX_ALSA) -> rtmidi.MidiOut:
+    """
+    Create a MIDI connection to a device.
+    :param name: The name of the MIDI device to connect to.
+    :param virtual: Whether to create a virtual MIDI device. Default is True.
+    :param number: The number of the MIDI device to connect to. Default is 0.
+    :param client_name: The name of the client. Default is None.
+    :param API: The MIDI API to use. Default is rtmidi.API_LINUX_ALSA.
+    :return: A MidiOut object representing the MIDI connection.
+    """
+    try:
+        midi_out: rtmidi.MidiOut = rtmidi.MidiOut(API)
+    except SystemError as syserr:
+        print(f"Error creating MIDI out, possibly unavailable backend API specified: {syserr}")
+        midi_out = rtmidi.MidiOut(rtmidi.API_UNSPECIFIED)
+    if virtual:
+        midi_out.open_virtual_port(name)
+    else:
+        midi_out.open_port(port=number, name=name)
+    if client_name is not None:
+        midi_out.set_client_name(client_name)
+    return midi_out
 
 def send_dexed_parameter():
     pass
