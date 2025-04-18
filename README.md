@@ -3,7 +3,7 @@ A simple Python package to load/save/edit entire user-created Dexed carts, singl
 
 Uses rtmidi backend to format SYSEX messages directly to [Dexed](https://github.com/asb2m10/dexed/tree/master). Formatting implemented from the [Dexed documentation](https://github.com/asb2m10/dexed/blob/master/Documentation/sysex-format.txt).
 
-Based on code from the [WaveformAI project](waveformai.wm.edu)
+Based on code from the [WaveformAI project](https://waveformai.wm.edu)
 
 Licensed under GPL3
 
