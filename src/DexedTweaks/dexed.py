@@ -5,7 +5,7 @@
 # GPL-3.0 License
 
 import rtmidi
-from typing import Optional
+from typing import Optional, Callable, Any
 
 midi_output_object: Optional[rtmidi.MidiOut] = None
 """This is the global rtmidi object that dexed-tweaks will use for MIDI I/O. 
@@ -83,9 +83,9 @@ def send_dexed_parameter(parameter: int, value: int | str, function_change: bool
             value_byte= value_byte & 0x7F
         # Form the MIDI message
         sub_status = 0x01 # leave this as is
-        voice_change = 0x08 if function_change else 0x00
+        voice_change = 0x8 if function_change else 0
         message = [0xF0, 0x43, sub_status * 16 + channel, voice_change + ((parameter >> 7) & 0x03), parameter & 0x7F, value_byte, 0xF7]
-        #print([(byte, bin(byte), hex(byte)) for byte in message])
+        print([(byte, bin(byte), hex(byte)) for byte in message])
         parameter += 1
         # Send the message
         try:
@@ -352,16 +352,175 @@ class Oscillator():
 
 class Function():
     def __init__(self):
-        raise NotImplementedError
-
-    def __del__(self):
-        raise NotImplementedError
+        self._function_data: list = [0 for _ in range(14)]
+        self._parameter_indices = {
+        "Mono_Poly_Mode": 0,
+        "Pitch_Bend_Range": 1,
+        "Pitch_Bend_Step": 2,
+        "Portamento_Mode": 3,
+        "Portamento_Gliss": 4,
+        "Portamento_Time": 5,
+        "Mod_Wheel_Range": 6,
+        "Mod_Wheel_Assign": 7,
+        "Foot_Control_Range": 8,
+        "Foot_Control_Assign": 9,
+        "Breath_Control_Range": 10,
+        "Breath_Control_Assign": 11,
+        "Aftertouch_Range": 12,
+        "Aftertouch_Assign": 13,
+    }
 
     def send_to_dexed(self):
         raise NotImplementedError
     
     def function_data_as_list(self):
         raise NotImplementedError
+    
+
+    # Here are the properties for a Dexed Function, mapped into a list ordered in memory
+    @property
+    def Mono_Poly_Mode(self):
+        return self._function_data[0]
+    @Mono_Poly_Mode.setter
+    def Mono_Poly_Mode(self, value: int):
+        if value < 0 or value > 1:
+            raise ValueError("This parameter must either be 0 (polyphonic mode) or 1 (monophonic mode)")
+        self._function_data[0] = value
+    @property
+    def Pitch_Bend_Range(self):
+        return self._function_data[1]
+    @Pitch_Bend_Range.setter
+    def Pitch_Bend_Range(self, value: int):
+        if value < 0 or value > 12:
+            raise ValueError("This parameter must have a value between 0 and 12")
+        self._function_data[1] = value
+    @property
+    def Pitch_Bend_Step(self):
+        return self._function_data[2]
+    @Pitch_Bend_Step.setter
+    def Pitch_Bend_Step(self, value: int):
+        if value < 0 or value > 7:
+            raise ValueError("This parameter must have a value between 0 and 7")
+        self._function_data[2] = value
+    @property
+    def Portamento_Mode(self):
+        return self._function_data[3]
+    @Portamento_Mode.setter
+    def Portamento_Mode(self, value: int):
+        if value < 0 or value > 1:
+            raise ValueError("This parameter must either be 0 (retain) or 1 (follow)")
+        self._function_data[3] = value
+    @property
+    def Portamento_Gliss(self):
+        return self._function_data[4]
+    @Portamento_Gliss.setter
+    def Portamento_Gliss(self, value: int):
+        if value < 0 or value > 1:
+            raise ValueError("This parameter must either be 0 (portamento) or 1 (glissando)")
+        self._function_data[4] = value
+    @property
+    def Portamento_Time(self):
+        return self._function_data[5]
+    @Portamento_Time.setter
+    def Portamento_Time(self, value: int):
+        if value < 0 or value > 99:
+            raise ValueError("This parameter must have a value between 0 and 99")
+        self._function_data[5] = value
+    @property
+    def Mod_Wheel_Range(self):
+        return self._function_data[6]
+    @Mod_Wheel_Range.setter
+    def Mod_Wheel_Range(self, value: int):
+        if value < 0 or value > 99:
+            raise ValueError("This parameter must have a value between 0 and 99")
+        self._function_data[6] = value
+    @property
+    def Mod_Wheel_Assign(self):
+        return self._function_data[7]
+    @Mod_Wheel_Assign.setter
+    def Mod_Wheel_Assign(self, value: int):
+        if value < 0 or value > 7:
+            raise ValueError("This parameter must have a value between 0 and 7")
+        self._function_data[7] = value
+    @property
+    def Foot_Control_Range(self, value: int):
+        return self._function_data[8]
+    @Foot_Control_Range.setter
+    def Foot_Control_Range(self, value: int):
+        if value < 0 or value > 99:
+            raise ValueError("This parameter must have a value between 0 and 99")
+        self._function_data[8] = value
+    @property
+    def Foot_Control_Assign(self):
+        return self._function_data[9]
+    @Foot_Control_Assign.setter
+    def Foot_Control_Assign(self, value: int):
+        if value < 0 or value > 7:
+            raise ValueError("This parameter must have a value between 0 and 7")
+        self._function_data[9] = value
+    @property
+    def Breath_Control_Range(self):
+        return self._function_data[10]
+    @Breath_Control_Range.setter
+    def Breath_Control_Range(self, value: int):
+        if value < 0 or value > 99:
+            raise ValueError("This parameter must have a value between 0 and 99")
+        self._function_data[10] = value
+    @property
+    def Breath_Control_Assign(self):
+        return self._function_data[11]
+    @Breath_Control_Assign.setter
+    def Breath_Control_Assign(self, value: int):
+        if value < 0 or value > 7:
+            raise ValueError("This parameter must have a value between 0 and 7")
+        self._function_data[11] = value
+    @property
+    def Aftertouch_Range(self):
+        return self._function_data[12]
+    @Aftertouch_Range.setter
+    def Aftertouch_Range(self, value: int):
+        if value < 0 or value > 99:
+            raise ValueError("This parameter must have a value between 0 and 99")
+        self._function_data[12] = value
+    @property
+    def Aftertouch_Assign(self):
+        return self._function_data[13]
+    @Aftertouch_Assign.setter
+    def Aftertouch_Assign(self, value: int):
+        if value < 0 or value > 7:
+            raise ValueError("This parameter must have a value between 0 and 7")
+        self._function_data[13] = value
+    
+    def function_data_to_list(self) -> list:
+        """
+        Returns the function data as a list.
+        :return: The function data as a list.
+        """
+        return self._function_data
+    
+    def __getitem__(self, index):
+        if index < 0 or index > 13:
+            raise IndexError('Index out of range')
+            return -1
+        return self._function_data[index]
+    
+    def __setitem__(self, index, value: int) -> None:
+        if not isinstance(value, int):
+            raise ValueError('Value must be an integer')
+            return
+        self._function_data[index] = 0xFF & abs(value)
+
+    def midi_addr_of(self, parameter: str) -> int:
+        if not isinstance(parameter, str):
+            raise ValueError('Function parameter must be a string to search')
+            return -1
+        if parameter in self._parameter_indices:
+            return self._parameter_indices[parameter] + 64
+        else:        
+            raise KeyError('Parameter name not found')
+            return -1
+    
+    
 
 class Voice():
     def __init__(self, number: int, oscillators: list[Oscillator] = [], **kwargs):
@@ -435,6 +594,7 @@ class Voice():
         for i in range(min(len(oscillators), 6)):
             self.__setattr__(f'Oscillator{i+1}', oscillators[i])
 
+    # Here are the properties for a Dexed Voice, mapped into a list ordered in memory
     @property
     def Pitch_EG_Rate_1(self):
         return self._voice_data[0]
