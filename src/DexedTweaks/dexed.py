@@ -338,14 +338,17 @@ class Oscillator():
             return
         self._oscillator_data[index] = 0xFF & abs(value) # make sure it's the size of a byte
 
-    def midi_addr_of(self, parameter: str) -> int:
-        if not isinstance(parameter, str):
-            raise ValueError('Oscillator parameter must be a string to search')
-            return -1
-        if parameter in self._parameter_indices:
-            return self._parameter_indices[parameter] + 21*(6-self.number)
-        else:        
-            raise KeyError('Parameter name not found')
+    def midi_addr_of(self, parameter: str | int) -> int:
+        if isinstance(parameter, int):
+            return list(self._parameter_indices.values())[parameter] + 21*(6-self.number)
+        elif isinstance(parameter, str):
+            if parameter in self._parameter_indices:
+                return self._parameter_indices[parameter] + 21*(6-self.number)
+            else:        
+                raise KeyError('Parameter name not found')
+                return -1
+        else:
+            raise ValueError('Oscillator parameter must be an integer index or a string to search')
             return -1
         
  
@@ -491,7 +494,7 @@ class Function():
             raise ValueError("This parameter must have a value between 0 and 7")
         self._function_data[13] = value
     
-    def function_data_to_list(self) -> list:
+    def function_data_to_list(self) -> list[int]:
         """
         Returns the function data as a list.
         :return: The function data as a list.
@@ -767,7 +770,7 @@ class Voice():
     def send_to_dexed(self):
         raise NotImplementedError
     
-    def voice_data_to_list(self) -> list:
+    def voice_data_to_list(self) -> list[int]:
         """
         Returns the voice data as a list.
         :return: The voice data as a list.
@@ -795,13 +798,18 @@ class Voice():
         self._voice_data[index] = 0xFF & abs(value)
     
     def midi_addr_of(self, parameter: str) -> int:
-        if not isinstance(parameter, str):
-            raise ValueError('Voice parameter must be a string to search')
-        if parameter in self._voice_parameter_indices:
-            return self._voice_parameter_indices[parameter] + 21*6
-        else:        
-            raise KeyError('Parameter name not found')
+        if isinstance(parameter, int):
+            return list(self._voice_parameter_indices.values())[parameter] + 21*6
+        elif isinstance(parameter, str):
+            if parameter in self.voice_parameter_indices:
+                return self._voice_parameter_indices[parameter] + 21*6
+            else:        
+                raise KeyError('Parameter name not found')
+                return -1
+        else:
+            raise ValueError('Oscillator parameter must be an integer index or a string to search')
             return -1
+        
         
 
 class Cart():
