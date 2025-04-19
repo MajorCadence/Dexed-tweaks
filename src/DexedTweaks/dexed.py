@@ -816,6 +816,7 @@ class Voice():
         if name.startswith('Oscillator'):
             if not isinstance(value, Oscillator):
                 raise ValueError(f'Value must be an instance of Oscillator, not {type(value)}')
+            value.number = int(name[-1]) # update to ensure that the oscillator number matches the attribute its assigned to
             self.__dict__[name] = value
         else:
             super().__setattr__(name, value)
@@ -848,31 +849,109 @@ class Voice():
         
 
 class Cart():
-    def __init__(self):
-        raise NotImplementedError
-
-    def __del__(self):
-        raise NotImplementedError
+    def __init__(self, voices: list[Voice] = None, filename: str = None):
+        if filename is not None:
+            self.read_from_file(filename)
+        elif voices is not None:
+            if all(isinstance(voice, Voice) for voice in voices):
+                self._voices = voices
+            else:
+                raise TypeError('All elements in the voices list must be instances of Voice')
+        else:
+            self._voices = [Voice(i) for i in range(32)]
 
     def read_from_file(self, filename: str) -> None:
-        raise NotImplementedError
-
+        """
+        Reads a Dexed cart file and populates the voices list.
+        :param filename: The name of the file to read from.
+        :return: None
+        """
+        with open(filename, 'rb') as f:
+            data = f.read()
+            unpacked_data = self._convert_from_32_voice_dump_format(data)
+            for i in range(32):
+                voice_data = unpacked_data[i*128 + 6*21:(i+1)*128]
+                voice = Voice(i, data=voice_data)
+                voice.Oscillator1 = Oscillator(1, data=unpacked_data[0:21])
+                voice.Oscillator2 = Oscillator(2, data=unpacked_data[21:42])
+                voice.Oscillator3 = Oscillator(3, data=unpacked_data[42:63])
+                voice.Oscillator4 = Oscillator(4, data=unpacked_data[63:84])
+                voice.Oscillator5 = Oscillator(5, data=unpacked_data[84:105])
+                voice.Oscillator6 = Oscillator(6, data=unpacked_data[105:126])
+                self._voices[i] = voice
     def save_to_file(self, filename: str) -> None:
-        raise NotImplementedError
-    
-    def get_voice(self, index: int) -> Voice:
-        raise NotImplementedError
-    
+        """
+        Saves the voices to a Dexed cart file.
+        :param filename: The name of the file to save to.
+        :return: None
+        """
+        with open(filename, 'wb') as f:
+            total_voice_data = [0 for _ in range(32)]
+            for i in range(32):
+                total_voice_data[i] = chain(self._voices[i].Oscillator1.oscillator_data_to_list(),
+                                        self._voices[i].Oscillator2.oscillator_data_to_list(),
+                                        self._voices[i].Oscillator3.oscillator_data_to_list(),
+                                        self._voices[i].Oscillator4.oscillator_data_to_list(),
+                                        self._voices[i].Oscillator5.oscillator_data_to_list(),
+                                        self._voices[i].Oscillator6.oscillator_data_to_list(),
+                                        self._voices[i].voice_data_to_list())
+            packed_data = self._convert_to_32_voice_dump_format(bytes([byte for voice_data in total_voice_data for byte in voice_data]))
+            f.write(bytes.fromhex('F04300092000') + packed_data + (-1*sum(packed_data) & 0x7F).to_bytes(1, 'big') + bytes.fromhex('F7'))
     def get_voices(self) -> list[Voice]:
-        raise NotImplementedError
-    
-    def save_voice(self, index: int, voice: Voice):
-        raise NotImplementedError
+        """
+        Returns the list of voices.
+        :return: The list of Voice objects.
+        """
+        return self._voices
     
     def send_to_dexed(self):
         raise NotImplementedError
     
- 
+    def __getitem__(self, index):
+        if index < 0 or index > 31:
+            raise IndexError('Index out of range')
+        return self._voices[index]
+    
+    def __setitem__(self, index, value) -> None:
+        if not isinstance(value, Voice):
+            raise ValueError('Value must be an instance of Voice')
+        if index < 0 or index > 31:
+            raise IndexError('Index out of range')
+        self._voices[index] = value
+
+    def _convert_to_32_voice_dump_format(self, data: bytes) -> bytes:
+        new_data = bytearray(4096)
+        temp_data = bytearray(26)
+        for i in range(32):
+            voice_data = data[i*155:(i+1)*155]
+            for j in range(6):
+                oscillator_data = voice_data[21*j:21*(j+1)]
+                temp_data[:11] = oscillator_data[:11]
+                temp_data[11] = oscillator_data[11] + (oscillator_data[12] << 2)
+                temp_data[12] = oscillator_data[13] + (oscillator_data[20] << 3)
+                temp_data[13] = oscillator_data[14] + (oscillator_data[15] << 2)
+                temp_data[14] = oscillator_data[16]
+                temp_data[15] = oscillator_data[17] + (oscillator_data[18] << 1)
+                temp_data[16] = oscillator_data[19]
+                new_data[i*128 + j*17:(i*128 + j*17) + 17] = temp_data[:17]
+            voice_param_data = voice_data[126:155]
+            temp_data[:9] = voice_param_data[:9]
+            temp_data[9] = voice_param_data[9] + (voice_param_data[10] << 3)
+            temp_data[10:14] = voice_param_data[11:15]
+            temp_data[14] = voice_param_data[15] + (voice_param_data[16] << 1) + (voice_param_data[17] << 5)
+            temp_data[15:] = voice_param_data[18:]
+            new_data[i*128 + 6*17:(i*128 + 6*17) + 26] = temp_data
+                             
+        return new_data
+    
+    def _convert_from_32_voice_dump_format(self, data: bytes) -> bytes:
+        """
+        Converts the data from the 32 voice dump format.
+        :param data: The data to convert.
+        :return: The converted data.
+        """
+        # This is a placeholder implementation
+        return data
     
 
 '''

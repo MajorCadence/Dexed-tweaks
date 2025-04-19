@@ -8,6 +8,12 @@ Having looked for a while in vain for something similar to this, I decided to ju
 
 Licensed under GPL3
 
-Eventially this will be installable from pip. Currently under development. ~40% complete.
+Eventially this will be installable from pip. Currently under development. ~60% complete.
 
 Most functions have decent documentation. For more info, please look in the examples directory.
+
+
+## Important Note Regarding Function Parameters
+Currently, while Dexed voice parameters work great, Dexed does not seem to support changing global function parameters (e.g. pitch bend, aftertouch, portamento, poly/mono switching, etc...). I have still implemented this functionality into my code, and it *should* work with a real DX7, but it is untested. I would appriciate any feedback here.
+
+Dexed also may/may not support sending the currently loaded cart over a MIDI output stream. If this is in fact possible, I am planning to add a feature to save Dexed carts (i.e. this would function the same as pressing the 'save' button within Dexed)
