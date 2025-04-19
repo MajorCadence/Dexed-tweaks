@@ -21,9 +21,13 @@ if __name__ == "__main__":
     myvoice = Voice(0, name='prince')
     global_functions = Function()
     for oscillator in myvoice.get_oscillators():
-        oscillator.active = True
-        oscillator.Oscillator_Mode = 1
+        oscillator.EG_RATE_1 = 99
+        oscillator.Detune = 14
+        oscillator.active = False
     value = 0
+    myvoice.Pitch_EG_Rate_1 = 99
+    myvoice.Voice_Name = "HELLOWORLD"
+    myvoice.send_to_dexed()
     input()
     while True:
         for oscillator in myvoice.get_oscillators():

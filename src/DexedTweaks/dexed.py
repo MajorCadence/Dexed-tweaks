@@ -6,6 +6,7 @@
 
 import rtmidi
 from typing import Optional, Callable, Any
+from itertools import chain
 
 midi_output_object: Optional[rtmidi.MidiOut] = None
 """This is the global rtmidi object that dexed-tweaks will use for MIDI I/O. 
@@ -767,8 +768,42 @@ class Voice():
         """Read only. Use this value in single parameter changes. To update this value, set the active attribute in each oscillator."""
         return int(''.join(['1' if oscillator.active else '0' for oscillator in self.get_oscillators()]), 2)
 
-    def send_to_dexed(self):
-        raise NotImplementedError
+    def send_to_dexed(self, channel: int = 0) -> bool:
+        """
+        Sends the voice data to Dexed.
+        :param channel: The MIDI channel to send the data on (0-15).
+        :return: True if the data was sent successfully, False otherwise.
+        """
+        # Form the MIDI message
+        sub_status = 0x00 # leave this as is
+        format_n = 0x00 # format for 1 voice
+
+        # total byte count of 155
+        byte_count_MSB = 0x01
+        byte_count_LSB = 0x1B
+
+        checksum = 0x7F & (sum(chain([sub_status * 16 + channel, format_n, byte_count_MSB, byte_count_LSB], self.Oscillator1, self.Oscillator2, self.Oscillator3, self.Oscillator4, self.Oscillator5, self.Oscillator6, self._voice_data)) * (-1) + 1)
+        message = chain([0xF0, 0x43, sub_status * 16 + channel, format_n, 
+                         byte_count_MSB, byte_count_LSB], self.Oscillator1, 
+                         self.Oscillator2, self.Oscillator3, self.Oscillator4, 
+                         self.Oscillator5, self.Oscillator6, self._voice_data, 
+                         [checksum, 0xF7])
+        #print([(byte, bin(byte), hex(byte)) for byte in message])
+        #Send the message
+        try:
+            if midi_output_object is None:
+                raise RuntimeError("MIDI output not initialized. Call midi_connection() first.")
+                return False
+            midi_output_object.send_message(message)
+        except RuntimeError as err:
+            print(f"Error: {err}")
+            return False
+        except rtmidi.RtMidiError as err:
+            print(f"Error sending MIDI message: {err}")
+            return False
+        # Here we also need to send a single parameter for the active oscillators
+        send_dexed_parameter(self.midi_addr_of('ActiveOscillators'), self.ActiveOscillators, channel)
+        return True
     
     def voice_data_to_list(self) -> list[int]:
         """
@@ -801,7 +836,7 @@ class Voice():
         if isinstance(parameter, int):
             return list(self._voice_parameter_indices.values())[parameter] + 21*6
         elif isinstance(parameter, str):
-            if parameter in self.voice_parameter_indices:
+            if parameter in self._voice_parameter_indices:
                 return self._voice_parameter_indices[parameter] + 21*6
             else:        
                 raise KeyError('Parameter name not found')
