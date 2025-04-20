@@ -139,8 +139,8 @@ class Oscillator():
             case 1:
                 match list(kwargs.keys())[0]:
                     case 'data':
-                        if type(kwargs['data']) != list:
-                            raise TypeError(f'Data must be a list of integers, not {type(kwargs['data'])}')
+                        if type(kwargs['data']) != list and type(kwargs['data']) != bytes:
+                            raise TypeError(f'Data must be a list of integers or a byte object, not {type(kwargs['data'])}')
                         if not all(type(elem) == int for elem in kwargs['data']):
                             raise TypeError(f'Data must be a list of integers, not {type(kwargs['data'])}')
                         for i in range(min(len(self._oscillator_data), len(kwargs['data']))):
@@ -566,8 +566,8 @@ class Voice():
                             raise TypeError(f'Name must be of type string, not {type(kwargs['name'])}')
                         self.Voice_Name = kwargs['name']
                     case 'data':
-                        if type(kwargs['data']) != list:
-                            raise TypeError(f'Data must be a list of integers, not {type(kwargs['data'])}')
+                        if type(kwargs['data']) != list and type(kwargs['data']) != bytes:
+                            raise TypeError(f'Data must be a list of integers or a byte object, not {type(kwargs['data'])}')
                         if not all(type(elem) == int for elem in kwargs['data']):
                             raise TypeError(f'Data must be a list of integers, not {type(kwargs['data'])}')
                         for i in range(min(len(self._voice_data), len(kwargs['data']))):
@@ -782,7 +782,7 @@ class Voice():
         byte_count_MSB = 0x01
         byte_count_LSB = 0x1B
 
-        checksum = 0x7F & (sum(chain([sub_status * 16 + channel, format_n, byte_count_MSB, byte_count_LSB], self.Oscillator1, self.Oscillator2, self.Oscillator3, self.Oscillator4, self.Oscillator5, self.Oscillator6, self._voice_data)) * (-1) + 1)
+        checksum = 0x7F & sum(chain(self.Oscillator1, self.Oscillator2, self.Oscillator3, self.Oscillator4, self.Oscillator5, self.Oscillator6, self._voice_data))
         message = chain([0xF0, 0x43, sub_status * 16 + channel, format_n, 
                          byte_count_MSB, byte_count_LSB], self.Oscillator1, 
                          self.Oscillator2, self.Oscillator3, self.Oscillator4, 
@@ -850,6 +850,7 @@ class Voice():
 
 class Cart():
     def __init__(self, voices: list[Voice] = None, filename: str = None):
+        self._voices = [Voice(i) for i in range(32)]
         if filename is not None:
             self.read_from_file(filename)
         elif voices is not None:
@@ -857,8 +858,6 @@ class Cart():
                 self._voices = voices
             else:
                 raise TypeError('All elements in the voices list must be instances of Voice')
-        else:
-            self._voices = [Voice(i) for i in range(32)]
 
     def read_from_file(self, filename: str) -> None:
         """
@@ -868,16 +867,23 @@ class Cart():
         """
         with open(filename, 'rb') as f:
             data = f.read()
+            if data[:4] != bytes.fromhex('F0430009'):
+                raise ValueError('Invalid Dexed cart file format: missing header')
+            if data[4:6] != bytes.fromhex('2000'):
+                raise ValueError('Invalid Dexed cart file format: missing header')
+            if data[-2] != ((-1*sum(data[6:-2])) & 0x7F):
+                print('Invalid Dexed cart file format: checksum mismatch! Loading anyway...')
+            data = data[6:-2]
             unpacked_data = self._convert_from_32_voice_dump_format(data)
             for i in range(32):
-                voice_data = unpacked_data[i*128 + 6*21:(i+1)*128]
+                voice_data = unpacked_data[i*155 + 6*21:(i+1)*155]
                 voice = Voice(i, data=voice_data)
-                voice.Oscillator1 = Oscillator(1, data=unpacked_data[0:21])
-                voice.Oscillator2 = Oscillator(2, data=unpacked_data[21:42])
-                voice.Oscillator3 = Oscillator(3, data=unpacked_data[42:63])
-                voice.Oscillator4 = Oscillator(4, data=unpacked_data[63:84])
-                voice.Oscillator5 = Oscillator(5, data=unpacked_data[84:105])
-                voice.Oscillator6 = Oscillator(6, data=unpacked_data[105:126])
+                voice.Oscillator6 = Oscillator(6, data=unpacked_data[i*155:i*155 + 21])
+                voice.Oscillator5 = Oscillator(5, data=unpacked_data[i*155 + 21:i*155 + 42])
+                voice.Oscillator4 = Oscillator(4, data=unpacked_data[i*155 + 42:i*155 + 63])
+                voice.Oscillator3 = Oscillator(3, data=unpacked_data[i*155 + 63:i*155 + 84])
+                voice.Oscillator2 = Oscillator(2, data=unpacked_data[i*155 + 84:i*155 + 105])
+                voice.Oscillator1 = Oscillator(1, data=unpacked_data[i*155 + 105:i*155 + 126])
                 self._voices[i] = voice
     def save_to_file(self, filename: str) -> None:
         """
@@ -888,15 +894,15 @@ class Cart():
         with open(filename, 'wb') as f:
             total_voice_data = [0 for _ in range(32)]
             for i in range(32):
-                total_voice_data[i] = chain(self._voices[i].Oscillator1.oscillator_data_to_list(),
-                                        self._voices[i].Oscillator2.oscillator_data_to_list(),
-                                        self._voices[i].Oscillator3.oscillator_data_to_list(),
-                                        self._voices[i].Oscillator4.oscillator_data_to_list(),
+                total_voice_data[i] = chain(self._voices[i].Oscillator6.oscillator_data_to_list(),
                                         self._voices[i].Oscillator5.oscillator_data_to_list(),
-                                        self._voices[i].Oscillator6.oscillator_data_to_list(),
+                                        self._voices[i].Oscillator4.oscillator_data_to_list(),
+                                        self._voices[i].Oscillator3.oscillator_data_to_list(),
+                                        self._voices[i].Oscillator2.oscillator_data_to_list(),
+                                        self._voices[i].Oscillator1.oscillator_data_to_list(),
                                         self._voices[i].voice_data_to_list())
             packed_data = self._convert_to_32_voice_dump_format(bytes([byte for voice_data in total_voice_data for byte in voice_data]))
-            f.write(bytes.fromhex('F04300092000') + packed_data + (-1*sum(packed_data) & 0x7F).to_bytes(1, 'big') + bytes.fromhex('F7'))
+            f.write(bytes.fromhex('F04300092000') + packed_data + ((-1*sum(packed_data)) & 0x7F).to_bytes(1, 'big') + bytes.fromhex('F7'))
     def get_voices(self) -> list[Voice]:
         """
         Returns the list of voices.
@@ -904,8 +910,34 @@ class Cart():
         """
         return self._voices
     
-    def send_to_dexed(self):
-        raise NotImplementedError
+    def send_to_dexed(self, channel: int = 0) -> bool:
+        total_voice_data = [0 for _ in range(32)]
+        header = bytes.fromhex('F04300092000')
+        for i in range(32):
+            total_voice_data[i] = chain(self._voices[i].Oscillator6.oscillator_data_to_list(),
+                                    self._voices[i].Oscillator5.oscillator_data_to_list(),
+                                    self._voices[i].Oscillator4.oscillator_data_to_list(),
+                                    self._voices[i].Oscillator3.oscillator_data_to_list(),
+                                    self._voices[i].Oscillator2.oscillator_data_to_list(),
+                                    self._voices[i].Oscillator1.oscillator_data_to_list(),
+                                    self._voices[i].voice_data_to_list())
+        packed_data = self._convert_to_32_voice_dump_format(bytes([byte for voice_data in total_voice_data for byte in voice_data]))
+        checksum = ((-1*sum(packed_data)) & 0x7F).to_bytes(1, 'big')
+        message = chain(header, packed_data, checksum, bytes.fromhex('F7'))
+        #Send the message
+        try:
+            if midi_output_object is None:
+                raise RuntimeError("MIDI output not initialized. Call midi_connection() first.")
+                return False
+            midi_output_object.send_message(message)
+        except RuntimeError as err:
+            print(f"Error: {err}")
+            return False
+        except rtmidi.RtMidiError as err:
+            print(f"Error sending MIDI message: {err}")
+            return False
+        #Active Oscillators parameter doesn't matter here; it's overriden by Dexed when changing voices
+        return True
     
     def __getitem__(self, index):
         if index < 0 or index > 31:
@@ -917,6 +949,7 @@ class Cart():
             raise ValueError('Value must be an instance of Voice')
         if index < 0 or index > 31:
             raise IndexError('Index out of range')
+        value.number = index # update to ensure that the voice number matches the attribute its assigned to
         self._voices[index] = value
 
     def _convert_to_32_voice_dump_format(self, data: bytes) -> bytes:
@@ -927,22 +960,23 @@ class Cart():
             for j in range(6):
                 oscillator_data = voice_data[21*j:21*(j+1)]
                 temp_data[:11] = oscillator_data[:11]
-                temp_data[11] = oscillator_data[11] + (oscillator_data[12] << 2)
-                temp_data[12] = oscillator_data[13] + (oscillator_data[20] << 3)
-                temp_data[13] = oscillator_data[14] + (oscillator_data[15] << 2)
+                temp_data[11] = (oscillator_data[11] & 0b11) + ((oscillator_data[12] & 0b11) << 2)
+                temp_data[12] = (oscillator_data[13] & 0b111) + ((oscillator_data[20] & 0b1111) << 3)
+                temp_data[13] = (oscillator_data[14] & 0b11) + ((oscillator_data[15] & 0b111) << 2)
                 temp_data[14] = oscillator_data[16]
-                temp_data[15] = oscillator_data[17] + (oscillator_data[18] << 1)
+                temp_data[15] = (oscillator_data[17] & 0b1) + ((oscillator_data[18] & 0b11111) << 1)
                 temp_data[16] = oscillator_data[19]
                 new_data[i*128 + j*17:(i*128 + j*17) + 17] = temp_data[:17]
             voice_param_data = voice_data[126:155]
-            temp_data[:9] = voice_param_data[:9]
-            temp_data[9] = voice_param_data[9] + (voice_param_data[10] << 3)
+            temp_data[:8] = voice_param_data[:8]
+            temp_data[8] = voice_param_data[8] & 0b11111
+            temp_data[9] = (voice_param_data[9] & 0b111) + ((voice_param_data[10] & 0b1) << 3)
             temp_data[10:14] = voice_param_data[11:15]
-            temp_data[14] = voice_param_data[15] + (voice_param_data[16] << 1) + (voice_param_data[17] << 5)
+            temp_data[14] = (voice_param_data[15] & 0b1) + ((voice_param_data[16] & 0b1111) << 1) + ((voice_param_data[17] & 0b11) << 5)
             temp_data[15:] = voice_param_data[18:]
             new_data[i*128 + 6*17:(i*128 + 6*17) + 26] = temp_data
                              
-        return new_data
+        return bytes(new_data)
     
     def _convert_from_32_voice_dump_format(self, data: bytes) -> bytes:
         """
@@ -950,57 +984,36 @@ class Cart():
         :param data: The data to convert.
         :return: The converted data.
         """
-        # This is a placeholder implementation
-        return data
+        new_data = bytearray(4960)
+        temp_data = bytearray(26)
+        for i in range(32):
+            voice_data = data[i*128:(i+1)*128]
+            for j in range(6):
+                oscillator_data = voice_data[j*17:(j+1)*17]
+                temp_data[:11] = oscillator_data[:11]
+                temp_data[11] = oscillator_data[11] & 0b11
+                temp_data[12] = (oscillator_data[11] & 0b1100) >> 2
+                temp_data[13] = oscillator_data[12] & 0b111
+                temp_data[14] = oscillator_data[13] & 0b11
+                temp_data[15] = (oscillator_data[13] & 0b11100) >> 2
+                temp_data[16] = oscillator_data[14]
+                temp_data[17] = oscillator_data[15] & 0b1
+                temp_data[18] = (oscillator_data[15] & 0b111110) >> 1
+                temp_data[19] = oscillator_data[16]
+                temp_data[20] = (oscillator_data[12] & 0b1111000) >> 3
+                new_data[i*155 + j*21:(i*155 + j*21) + 21] = temp_data[:21]
+            voice_param_data = voice_data[6*17:(6*17) + 26]
+            temp_data[:8] = voice_param_data[:8]
+            temp_data[8] = voice_param_data[8] & 0x1F
+            temp_data[9] = voice_param_data[9] & 0b111
+            temp_data[10] = (voice_param_data[9] & 0b1000) >> 3
+            temp_data[11:15] = voice_param_data[10:14]
+            temp_data[15] = voice_param_data[14] & 0b1
+            temp_data[16] = (voice_param_data[14] & 0b11110) >> 1
+            temp_data[17] = (voice_param_data[14] & 0b1100000) >> 5
+            temp_data[18:] = voice_param_data[15:]
+            new_data[i*155 + 6*21:(i*155 + 6*21) + 29] = temp_data[:29]
+    
+        return bytes(new_data)
     
 
-'''
-    def __init__(self, preset_path: str = None):
-        if preset_path is not None:
-            self.__preset_path = preset_path
-            with open(preset_path, 'rb') as preset_file:
-                self.__rawsysex = preset_file.read()
-        self.__pre_init()
-        
-    def __del__(self):
-        del self
-
-    def parse_from_file(self, preset_path: str, index: int):
-        if self.__rawsysex == None:
-            with open(preset_path, 'rb') as preset_file:
-                self.__rawsysex = preset_file.read()
-                self.l.debug(f"Loaded preset file {preset_path}")
-        assert index >= 0 & index < 32
-        removed_header_footer = self.__rawsysex.removeprefix(bytes.fromhex('F04300092000'))[:-2]
-        message_at_index = removed_header_footer[128*index : 128*(index + 1)]
-        self.l.debug(message_at_index.hex(' '))
-        self.l.debug(message_at_index.__len__())
-        for i in range(6):
-            osc_bytes = message_at_index[17*i:17*(i+1)]
-            self.l.debug2(osc_bytes.hex(' '))
-            self.__subset = self.__values[21*i:21*(i+1)]
-            self.__subset[0:4] = list(osc_bytes[0:4])
-            self.__subset[4:8] = list(osc_bytes[4:8])
-            self.l.debug(self.__subset)
-
-            self.__values[21*i:21*(i+1)] = self.__subset
-        self.l.debug(pformat(self.__values))
-        for key, val in self.params.items():
-            self.params[key][1] = self.__values[val[0]]
-            print(val[0], key, self.__values[val[0]])
-        self.l.debug2(f"Updated parameters from parsing: {pformat(self.params)}")
-
-    def parse(self, index: int):
-        assert self.__preset_path is not None
-        self.parse_from_file(self.__preset_path, index)
-
-    
-
-    def __pre_init(self):
-        with open('./data/dexed-mapping.json', 'r') as jfile:
-            jdata = jfile.read()
-        self.params: dict[str, list[int, int]] = json.loads(jdata)
-        self.__values: list[int] = [0 for _ in self.params]
-        self.l.debug('Loaded JSON Dexed mapping descriptions!')
-        self.l.debug2(pformat(self.params))'
-        '''
