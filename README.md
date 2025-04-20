@@ -13,7 +13,7 @@ Eventially this will be installable from pip. Currently under development. ~60% 
 Most functions have decent documentation. For more info, please look in the examples directory.
 
 
-## Important Note Regarding Function Parameters
+## Important Note Regarding Function Parameters and Limitations
 Currently, while Dexed voice parameters work great, Dexed does not seem to support changing global function parameters (e.g. pitch bend, aftertouch, portamento, poly/mono switching, etc...). I have still implemented this functionality into my code, and it *should* work with a real DX7, but it is untested. I would appriciate any feedback here.
 
-Dexed also may/may not support sending the currently loaded cart over a MIDI output stream. If this is in fact possible, I am planning to add a feature to save Dexed carts (i.e. this would function the same as pressing the 'save' button within Dexed)
+Dexed unfortunately cannot be prompted to dump the currently loaded Cart over MIDI automatically (at least not to my knowledge), without right-clicking in the cart selector and choosing 'send sysex cartridge to DX7'. Likewise, with the real DX7 you also have to press a button, as opposed to some other synths, (e.g. like the TX7) which support automatic dumping requests.
