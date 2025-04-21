@@ -4,6 +4,9 @@
 # (Partially based on code from Waveform.AI project)
 # GPL-3.0 License
 
+# Version 0.0.1
+# 21/4/25
+
 import rtmidi
 from typing import Optional, Callable, Any
 from itertools import chain
@@ -150,9 +153,9 @@ class Oscillator():
                 match list(kwargs.keys())[0]:
                     case 'data':
                         if type(kwargs['data']) != list and type(kwargs['data']) != bytes:
-                            raise TypeError(f'Data must be a list of integers or a byte object, not {type(kwargs['data'])}')
+                            raise TypeError(f'Data must be a list of integers or a byte object')
                         if not all(type(elem) == int for elem in kwargs['data']):
-                            raise TypeError(f'Data must be a list of integers, not {type(kwargs['data'])}')
+                            raise TypeError(f'Data must be a list of integers')
                         for i in range(min(len(self._oscillator_data), len(kwargs['data']))):
                             self._oscillator_data[i] = kwargs['data'][i]
                     case _:
@@ -747,13 +750,13 @@ class Voice():
                 match list(kwargs.keys())[0]:
                     case 'name':
                         if type(kwargs['name']) != str:
-                            raise TypeError(f'Name must be of type string, not {type(kwargs['name'])}')
+                            raise TypeError(f'Name must be of type string, not')
                         self.Voice_Name = kwargs['name']
                     case 'data':
                         if type(kwargs['data']) != list and type(kwargs['data']) != bytes:
-                            raise TypeError(f'Data must be a list of integers or a byte object, not {type(kwargs['data'])}')
+                            raise TypeError(f'Data must be a list of integers or a byte object')
                         if not all(type(elem) == int for elem in kwargs['data']):
-                            raise TypeError(f'Data must be a list of integers, not {type(kwargs['data'])}')
+                            raise TypeError(f'Data must be a list of integers')
                         for i in range(min(len(self._voice_data), len(kwargs['data']))):
                             self._voice_data[i] = kwargs['data'][i]
                     case _:
@@ -1121,7 +1124,7 @@ class Cart():
     """
     Represents a Dexed cart. This is the main object for working with Dexed carts. A Dexed cart consists of 32 voices.
     """
-    def __init__(self, voices: list[Voice] = None, filename: str = str | None):
+    def __init__(self, voices: list[Voice] = None, filename: str = None):
         self._voices = [Voice(i) for i in range(32)]
         if filename is not None:
             self.read_from_file(filename)
