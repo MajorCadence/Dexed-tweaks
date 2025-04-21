@@ -1121,7 +1121,7 @@ class Cart():
     """
     Represents a Dexed cart. This is the main object for working with Dexed carts. A Dexed cart consists of 32 voices.
     """
-    def __init__(self, voices: list[Voice] = None, filename: str = None):
+    def __init__(self, voices: list[Voice] = None, filename: str = str | None):
         self._voices = [Voice(i) for i in range(32)]
         if filename is not None:
             self.read_from_file(filename)
