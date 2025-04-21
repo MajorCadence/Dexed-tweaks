@@ -4,7 +4,7 @@
 # (Partially based on code from Waveform.AI project)
 # GPL-3.0 License
 
-# Version 0.0.1
+# Version 0.0.2
 # 21/4/25
 
 import rtmidi
@@ -1308,4 +1308,25 @@ class Cart():
     
         return bytes(new_data)
     
-
+    def dexed_select_voice(self, voice_number: int, channel: int = 0) -> bool:
+        """
+        Selects a voice (makes it active) from the currently loaded cart in Dexed.
+        :param voice_number: The number of the voice to select (0-31).
+        :param channel: The DX7 'channel' to send on, if you have multiple. Default for Dexed is 0, but can be changed.
+        :return: True if the voice was selected successfully, False otherwise.
+        """
+        if voice_number < 0 or voice_number > 31:
+            raise ValueError('Voice number must be between 0 and 31')
+            return False
+        try:
+            if midi_output_object is None:
+                raise RuntimeError("MIDI output not initialized. Call midi_connection() first.")
+                return False
+            midi_output_object.send_message([0b11000000 + channel, voice_number])
+        except RuntimeError as err:
+            print(f"Error: {err}")
+            return False
+        except rtmidi.RtMidiError as err:
+            print(f"Error sending MIDI message: {err}")
+            return False
+        return True

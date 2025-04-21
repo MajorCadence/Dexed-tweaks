@@ -76,6 +76,11 @@ if __name__ == "__main__":
     print("Sending function parameter (Mono/Poly Mode)...")
     dt.send_dexed_parameter(func.midi_addr_of("Mono_Poly_Mode"), func.Mono_Poly_Mode, function_change=True)
 
-    # Example 10: Clean up MIDI connection
+    # Example 10: Select a random voice from the cart, set it active
+    random_voice_index = random.randint(0, 31)
+    cart.dexed_select_voice(random_voice_index)
+    print(f"Selected random voice {random_voice_index} from the cart.")
+
+    # Example 11: Clean up MIDI connection
     print("Closing MIDI connection.")
     dt.close_midi_connection()

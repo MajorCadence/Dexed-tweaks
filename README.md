@@ -13,7 +13,8 @@ Since I have created this project mostly as a help for myself, it's not feature 
 Most functions have decent documentation. For more info, please look in the [examples](examples) directory.
 
 ## Version Releases
-21/4/25 - 0.0.1
+20/4/25 - 0.0.1
+21/4/25 - 0.0.2
 
 
 ## Installation
