@@ -15,12 +15,12 @@ midi_output_object: Optional[rtmidi.MidiOut] = None
 
 def midi_connection(name: str, virtual: bool = True, number: int = 0, client_name: Optional[str] = None, API: int = rtmidi.API_LINUX_ALSA) -> rtmidi.MidiOut:
     """
-    Create a MIDI connection to a device.
-    :param name: The name of the MIDI device to connect to.
-    :param virtual: Whether to create a virtual MIDI device. Default is True.
+    Create a MIDI connection to a device. (this will initialize the global midi_output_object)
+    :param name: The name of the MIDI device. If this is not a virtual device, this is the name of the port to connect to.
+    :param virtual: Whether to create a virtual MIDI device. Virtual MIDI devices are not supported by every API. Default is True.
     :param number: The number of the MIDI device to connect to. Default is 0.
     :param client_name: The name of the client. Default is None.
-    :param API: The MIDI API to use. Default is rtmidi.API_LINUX_ALSA.
+    :param API: The MIDI API to use. Default is rtmidi.API_LINUX_ALSA. Please refer to the rtmidi documentation for other options (windows, mac).
     :return: A MidiOut object representing the MIDI connection.
     """
     
@@ -41,7 +41,7 @@ def midi_connection(name: str, virtual: bool = True, number: int = 0, client_nam
 
 def close_midi_connection() -> None:
     """
-    Close the MIDI connection.
+    Close the MIDI connection. Provided for convinience.
     :return: None
     """
     global midi_output_object
@@ -58,7 +58,7 @@ def send_dexed_parameter(parameter: int, value: int | str, function_change: bool
     :param parameter: The parameter number (MIDI address) to send.
     :param value: The value to send. May be a string in the case of a voice name.
     :param function_change: Whether to send a voice change parameter or a function change parameter. Default is False (voice change).
-    :param channel: The MIDI channel to send on. Default is 0.
+    :param channel: The DX7 'channel' to send on, if you have multiple. Default for Dexed is 0, but can be changed.
     :return: True if the message was sent successfully, False otherwise.
     """
     # Check if values are within the valid range
@@ -103,13 +103,23 @@ def send_dexed_parameter(parameter: int, value: int | str, function_change: bool
     return True
 
 class Oscillator():
+    """
+    Represents a single oscillator in a Dexed voice.
+    """
     def __init__(self, number: int, active: bool = True, **kwargs):
+        """
+        Initializes the Oscillator object.
+        :param number: The number of the oscillator (1-6).
+        :param active: Whether the oscillator is active or not. Default is True.
+        :param kwargs: Additional keyword argument(s). Must be 'data': A list of integers representing raw oscillator data. The oscillator will internally populatethe data until it is full or the list is empty.
+        """
         if number > 6 or number < 1:
             raise ValueError('Oscillator number (ID) must be between 1 and 6')
             number = 1
         self.number: int = number
         self._oscillator_data: list = [0 for _ in range(21)]
         self.active: bool = active
+        """Whether the oscillator is active or not. Default is True."""
         self._parameter_indices: dict[str, int] = {
             "EG_RATE_1": 0,
             "EG_RATE_2": 1,
@@ -153,6 +163,10 @@ class Oscillator():
     # Here are the properties for a Dexed Oscillator, mapped into a list ordered in memory
     @property
     def EG_RATE_1(self):
+        """
+        The EG_RATE_1 parameter. Valid values are between 0 and 99.
+        :return: The EG_RATE_1 value.
+        """
         return self._oscillator_data[0]
     @EG_RATE_1.setter
     def EG_RATE_1(self, value: int):
@@ -161,6 +175,10 @@ class Oscillator():
         self._oscillator_data[0] = value
     @property
     def EG_RATE_2(self):
+        """
+        The EG_RATE_2 parameter. Valid values are between 0 and 99.
+        :return: The EG_RATE_2 value.
+        """
         return self._oscillator_data[1]
     @EG_RATE_2.setter
     def EG_RATE_2(self, value: int):
@@ -169,6 +187,10 @@ class Oscillator():
         self._oscillator_data[1] = value
     @property
     def EG_RATE_3(self):
+        """
+        The EG_RATE_3 parameter. Valid values are between 0 and 99.
+        :return: The EG_RATE_3 value.
+        """
         return self._oscillator_data[2]
     @EG_RATE_3.setter
     def EG_RATE_3(self, value: int):
@@ -177,6 +199,10 @@ class Oscillator():
         self._oscillator_data[2] = value
     @property
     def EG_RATE_4(self):
+        """
+        The EG_RATE_4 parameter. Valid values are between 0 and 99.
+        :return: The EG_RATE_4 value.
+        """
         return self._oscillator_data[3]
     @EG_RATE_4.setter
     def EG_RATE_4(self, value: int):
@@ -185,6 +211,10 @@ class Oscillator():
         self._oscillator_data[3] = value
     @property
     def EG_LEVEL_1(self):
+        """
+        The EG_LEVEL_1 parameter. Valid values are between 0 and 99.
+        :return: The EG_LEVEL_1 value.
+        """
         return self._oscillator_data[4]
     @EG_LEVEL_1.setter
     def EG_LEVEL_1(self, value: int):
@@ -193,6 +223,10 @@ class Oscillator():
         self._oscillator_data[4] = value
     @property
     def EG_LEVEL_2(self):
+        """
+        The EG_LEVEL_2 parameter. Valid values are between 0 and 99.
+        :return: The EG_LEVEL_2 value.
+        """
         return self._oscillator_data[5]
     @EG_LEVEL_2.setter
     def EG_LEVEL_2(self, value: int):
@@ -201,6 +235,10 @@ class Oscillator():
         self._oscillator_data[5] = value
     @property
     def EG_LEVEL_3(self):
+        """
+        The EG_LEVEL_3 parameter. Valid values are between 0 and 99.
+        :return: The EG_LEVEL_3 value.
+        """
         return self._oscillator_data[6]
     @EG_LEVEL_3.setter
     def EG_LEVEL_3(self, value: int):
@@ -209,6 +247,10 @@ class Oscillator():
         self._oscillator_data[6] = value
     @property
     def EG_LEVEL_4(self):
+        """
+        The EG_LEVEL_4 parameter. Valid values are between 0 and 99.
+        :return: The EG_LEVEL_4 value.
+        """
         return self._oscillator_data[7]
     @EG_LEVEL_4.setter
     def EG_LEVEL_4(self, value: int):
@@ -217,6 +259,10 @@ class Oscillator():
         self._oscillator_data[7] = value
     @property
     def Breakpoint(self):
+        """
+        The oscillator breakpoint parameter. Valid values are between 0 and 99. 39 = C3.
+        :return: The Breakpoint value.
+        """
         return self._oscillator_data[8]
     @Breakpoint.setter
     def Breakpoint(self, value: int):
@@ -225,6 +271,10 @@ class Oscillator():
         self._oscillator_data[8] = value
     @property
     def Left_Depth(self):
+        """
+        The left scale depth parameter. Valid values are between 0 and 99.
+        :return: The Left_Depth value.
+        """
         return self._oscillator_data[9]
     @Left_Depth.setter
     def Left_Depth(self, value: int):
@@ -233,6 +283,10 @@ class Oscillator():
         self._oscillator_data[9] = value
     @property
     def Right_Depth(self):
+        """
+        The right scale depth parameter. Valid values are between 0 and 99.
+        :return: The Right_Depth value.
+        """
         return self._oscillator_data[10]
     @Right_Depth.setter
     def Right_Depth(self, value: int):
@@ -241,6 +295,10 @@ class Oscillator():
         self._oscillator_data[10] = value
     @property
     def Left_Curve(self):
+        """
+        The left scale curve parameter. Valid values are between 0 and 3. 0 is a negative linear curve, 1 is a negative exponetial curve, 2 is a positive exponential curve, and 3 is a positive linear curve.
+        :return: The Left_Curve value.
+        """
         return self._oscillator_data[11]
     @Left_Curve.setter
     def Left_Curve(self, value: int):
@@ -249,6 +307,10 @@ class Oscillator():
         self._oscillator_data[11] = value
     @property
     def Right_Curve(self):
+        """
+        The right scale curve parameter. Valid values are between 0 and 3. 0 is a negative linear curve, 1 is a negative exponetial curve, 2 is a positive exponential curve, and 3 is a positive linear curve.
+        :return: The Right_Curve value.
+        """
         return self._oscillator_data[12]
     @Right_Curve.setter
     def Right_Curve(self, value: int):
@@ -257,6 +319,10 @@ class Oscillator():
         self._oscillator_data[12] = value
     @property
     def Rate_Scaling(self):
+        """
+        The rate scaling parameter. Valid values are between 0 and 7.
+        :return: The Rate_Scaling value.
+        """
         return self._oscillator_data[13]
     @Rate_Scaling.setter
     def Rate_Scaling(self, value: int):
@@ -265,6 +331,10 @@ class Oscillator():
         self._oscillator_data[13] = value
     @property
     def Amp_Mod_Scaling(self):
+        """
+        The amplitude modulation scaling parameter. Valid values are between 0 and 3.
+        :return: The Amp_Mod_Scaling value.
+        """
         return self._oscillator_data[14]
     @Amp_Mod_Scaling.setter
     def Amp_Mod_Scaling(self, value: int):
@@ -273,6 +343,10 @@ class Oscillator():
         self._oscillator_data[14] = value
     @property
     def Key_Velocity(self):
+        """
+        The key velocity parameter. Valid values are between 0 and 7.
+        :return: The Key_Velocity value.
+        """
         return self._oscillator_data[15]
     @Key_Velocity.setter
     def Key_Velocity(self, value: int):
@@ -281,6 +355,10 @@ class Oscillator():
         self._oscillator_data[15] = value
     @property
     def Output_Level(self):
+        """
+        The output level (oscillator volume) parameter. Valid values are between 0 and 99.
+        :return: The Output_Level value.
+        """
         return self._oscillator_data[16]
     @Output_Level.setter
     def Output_Level(self, value: int):
@@ -289,6 +367,10 @@ class Oscillator():
         self._oscillator_data[16] = value
     @property
     def Oscillator_Mode(self):
+        """
+        The oscillator mode parameter. Valid values are 0 (fixed) or 1 (ratio).
+        :return: The Oscillator_Mode value.
+        """
         return self._oscillator_data[17]
     @Oscillator_Mode.setter
     def Oscillator_Mode(self, value: int):
@@ -297,6 +379,10 @@ class Oscillator():
         self._oscillator_data[17] = value
     @property
     def Frequency_Coarse(self):
+        """
+        The coarse frequency adjustment parameter. Valid values are between 0 and 31.
+        :return: The Frequency_Coarse value.
+        """
         return self._oscillator_data[18]
     @Frequency_Coarse.setter
     def Frequency_Coarse(self, value: int):
@@ -305,6 +391,10 @@ class Oscillator():
         self._oscillator_data[18] = value
     @property
     def Frequency_Fine(self):
+        """
+        The fine frequency adjustment parameter. Valid values are between 0 and 99.
+        :return: The Frequency_Fine value.
+        """
         return self._oscillator_data[19]
     @Frequency_Fine.setter
     def Frequency_Fine(self, value: int):
@@ -313,6 +403,10 @@ class Oscillator():
         self._oscillator_data[19] = value
     @property
     def Detune(self):
+        """
+        The detune parameter. Valid values are between 0 and 14. A value of 7 is no detune.
+        :return: The Detune value.
+        """
         return self._oscillator_data[20]
     @Detune.setter
     def Detune(self, value: int):
@@ -340,6 +434,11 @@ class Oscillator():
         self._oscillator_data[index] = 0xFF & abs(value) # make sure it's the size of a byte
 
     def midi_addr_of(self, parameter: str | int) -> int:
+        """
+        Returns the MIDI address of the specified parameter. For use with the send_dexed_parameter() function.
+        :param parameter: The parameter name or index.
+        :return: The MIDI address of the parameter.
+        """
         if isinstance(parameter, int):
             return list(self._parameter_indices.values())[parameter] + 21*(6-self.number)
         elif isinstance(parameter, str):
@@ -355,7 +454,15 @@ class Oscillator():
  
 
 class Function():
+    """
+    Represents a global function in Dexed. These are not saved with the voice data. Function parameters differ from voice parameters in the MIDI messaging as well. You should pass in 'function=true' when using send_dexed_parameter() to send a function parameter.
+    Function parameters do not currently work with Dexed, but may work with a real DX7.
+    """
     def __init__(self):
+        """
+        Initializes the Function object. This is not part of a voice of cart. Currently, you can only use send_dexed_parameter() to send function parameters.
+        """
+
         self._function_data: list = [0 for _ in range(14)]
         self._parameter_indices = {
         "Mono_Poly_Mode": 0,
@@ -375,15 +482,24 @@ class Function():
     }
 
     def send_to_dexed(self):
+        #Not needed yet, at least until Dexed functionality working
         raise NotImplementedError
     
     def function_data_as_list(self):
-        raise NotImplementedError
+        """
+        Returns the function data as a list.
+        :return: The function data as a list.
+        """
+        return self._function_data
     
 
     # Here are the properties for a Dexed Function, mapped into a list ordered in memory
     @property
     def Mono_Poly_Mode(self):
+        """
+        Monophonic vs. polyphonic mode. Valid values are 0 (polyphonic) or 1 (monophonic).
+        :return: The Mono_Poly_Mode value.
+        """
         return self._function_data[0]
     @Mono_Poly_Mode.setter
     def Mono_Poly_Mode(self, value: int):
@@ -392,6 +508,10 @@ class Function():
         self._function_data[0] = value
     @property
     def Pitch_Bend_Range(self):
+        """
+        Set the range of the pitch bend wheel. Valid values are between 0 and 12. 12 is two full octaves of range.
+        :return: The Pitch_Bend_Range value.
+        """
         return self._function_data[1]
     @Pitch_Bend_Range.setter
     def Pitch_Bend_Range(self, value: int):
@@ -400,30 +520,46 @@ class Function():
         self._function_data[1] = value
     @property
     def Pitch_Bend_Step(self):
+        """
+        Set the step of the pitch bend wheel. Valid values are between 0 and 12. 12 is an octave step.
+        :return: The Pitch_Bend_Step value.
+        """
         return self._function_data[2]
     @Pitch_Bend_Step.setter
     def Pitch_Bend_Step(self, value: int):
-        if value < 0 or value > 7:
-            raise ValueError("This parameter must have a value between 0 and 7")
+        if value < 0 or value > 12:
+            raise ValueError("This parameter must have a value between 0 and 12")
         self._function_data[2] = value
     @property
     def Portamento_Mode(self):
+        """
+        Set the portamento mode. Valid values are 0 (retain: long or sustained notes will not have portamento applied) or 1 (follow: portamento will be applied to all notes when they are released)
+        :return: The Portamento_Mode value.
+        """
         return self._function_data[3]
     @Portamento_Mode.setter
     def Portamento_Mode(self, value: int):
         if value < 0 or value > 1:
-            raise ValueError("This parameter must either be 0 (retain) or 1 (follow)")
+            raise ValueError("This parameter must either be 0 or 1")
         self._function_data[3] = value
     @property
     def Portamento_Gliss(self):
+        """
+        Set the portamento glissando mode. Valid values are 0 (portamento: smooth pitch sliding) or 1 (glissando: stepped pitch sliding)
+        :return: The Portamento_Gliss value.
+        """
         return self._function_data[4]
     @Portamento_Gliss.setter
     def Portamento_Gliss(self, value: int):
         if value < 0 or value > 1:
-            raise ValueError("This parameter must either be 0 (portamento) or 1 (glissando)")
+            raise ValueError("This parameter must either be 0 or 1")
         self._function_data[4] = value
     @property
     def Portamento_Time(self):
+        """
+        Set the portamento time. Valid values are between 0 and 99. 99 is the longest portamento time. 0 is no effect at all.
+        :return: The Portamento_Time value.
+        """
         return self._function_data[5]
     @Portamento_Time.setter
     def Portamento_Time(self, value: int):
@@ -432,6 +568,10 @@ class Function():
         self._function_data[5] = value
     @property
     def Mod_Wheel_Range(self):
+        """
+        Set the modulation wheel range. Valid values are between 0 and 99. 
+        :return: The Mod_Wheel_Range value.
+        """
         return self._function_data[6]
     @Mod_Wheel_Range.setter
     def Mod_Wheel_Range(self, value: int):
@@ -440,6 +580,10 @@ class Function():
         self._function_data[6] = value
     @property
     def Mod_Wheel_Assign(self):
+        """
+        Function(s) to assign the modulation wheel to. Valid values are between 0 and 7. Bit 0 sets control over pitch. Bit 1 sets control over amplitude. Bit 2 sets control over EG_Bias (amount?).
+        :return: The Mod_Wheel_Assign value.
+        """
         return self._function_data[7]
     @Mod_Wheel_Assign.setter
     def Mod_Wheel_Assign(self, value: int):
@@ -448,6 +592,10 @@ class Function():
         self._function_data[7] = value
     @property
     def Foot_Control_Range(self, value: int):
+        """
+        Set the foot control range. Valid values are between 0 and 99.
+        :return: The Foot_Control_Range value.
+        """
         return self._function_data[8]
     @Foot_Control_Range.setter
     def Foot_Control_Range(self, value: int):
@@ -456,6 +604,10 @@ class Function():
         self._function_data[8] = value
     @property
     def Foot_Control_Assign(self):
+        """
+        Function(s) to assign the foot control to. Valid values are between 0 and 7. Bit 0 sets control over pitch. Bit 1 sets control over amplitude. Bit 2 sets control over EG_Bias (amount?).
+        :return: The Foot_Control_Assign value.
+        """
         return self._function_data[9]
     @Foot_Control_Assign.setter
     def Foot_Control_Assign(self, value: int):
@@ -464,6 +616,10 @@ class Function():
         self._function_data[9] = value
     @property
     def Breath_Control_Range(self):
+        """
+        Set the breath control range. Valid values are between 0 and 99.
+        :return: The Breath_Control_Range value.
+        """
         return self._function_data[10]
     @Breath_Control_Range.setter
     def Breath_Control_Range(self, value: int):
@@ -472,6 +628,10 @@ class Function():
         self._function_data[10] = value
     @property
     def Breath_Control_Assign(self):
+        """
+        Function(s) to assign the breath control to. Valid values are between 0 and 7. Bit 0 sets control over pitch. Bit 1 sets control over amplitude. Bit 2 sets control over EG_Bias (amount?).
+        :return: The Breath_Control_Assign value.
+        """
         return self._function_data[11]
     @Breath_Control_Assign.setter
     def Breath_Control_Assign(self, value: int):
@@ -480,6 +640,10 @@ class Function():
         self._function_data[11] = value
     @property
     def Aftertouch_Range(self):
+        """
+        Set the aftertouch (modulation via applying pressure to held keys) range. Valid values are between 0 and 99.
+        :return: The Aftertouch_Range value.
+        """
         return self._function_data[12]
     @Aftertouch_Range.setter
     def Aftertouch_Range(self, value: int):
@@ -488,6 +652,10 @@ class Function():
         self._function_data[12] = value
     @property
     def Aftertouch_Assign(self):
+        """
+        Function(s) to assign the aftertouch to. Valid values are between 0 and 7. Bit 0 sets control over pitch. Bit 1 sets control over amplitude. Bit 2 sets control over EG_Bias (amount?).
+        :return: The Aftertouch_Assign value.
+        """
         return self._function_data[13]
     @Aftertouch_Assign.setter
     def Aftertouch_Assign(self, value: int):
@@ -515,6 +683,11 @@ class Function():
         self._function_data[index] = 0xFF & abs(value)
 
     def midi_addr_of(self, parameter: str) -> int:
+        """
+        Returns the MIDI address of the specified parameter. For use with the send_dexed_parameter() function.
+        :param parameter: The parameter name.
+        :return: The MIDI address of the parameter.
+        """
         if not isinstance(parameter, str):
             raise ValueError('Function parameter must be a string to search')
             return -1
@@ -527,7 +700,18 @@ class Function():
     
 
 class Voice():
+    """
+    Represents a voice in Dexed. This is the main object for working with Dexed voices. A voice will consist of 6 oscillators, and a set of voice parameters.
+    """
     def __init__(self, number: int, oscillators: list[Oscillator] = [], **kwargs):
+        """
+        Initializes a Voice object.
+        :param number: The number of the voice (0-31) within a cart.
+        :param oscillators: An optional list of Oscillator objects to initialize the voice with. Default is an empty list.
+        :param kwargs: Additional keyword argument(s). Must be either: '
+        'name': A string (10 characters max) for the name of the voice. 
+        'data': A list of integers representing raw voice data. The voice will internally populate the data until it is full or the list is empty.
+        """
         if number > 31 or number < 0:
             raise ValueError('Voice number (ID) must be between 0 and 31')
             number = 0
@@ -601,6 +785,10 @@ class Voice():
     # Here are the properties for a Dexed Voice, mapped into a list ordered in memory
     @property
     def Pitch_EG_Rate_1(self):
+        """
+        The Pitch_EG_Rate_1 parameter. Valid values are between 0 and 99.
+        :return: The Pitch_EG_Rate_1 value.
+        """
         return self._voice_data[0]
     @Pitch_EG_Rate_1.setter
     def Pitch_EG_Rate_1(self, value: int):
@@ -609,6 +797,10 @@ class Voice():
         self._voice_data[0] = value
     @property
     def Pitch_EG_Rate_2(self):
+        """
+        The Pitch_EG_Rate_2 parameter. Valid values are between 0 and 99.
+        :return: The Pitch_EG_Rate_2 value.
+        """
         return self._voice_data[1]
     @Pitch_EG_Rate_2.setter
     def Pitch_EG_Rate_2(self, value: int):
@@ -617,6 +809,10 @@ class Voice():
         self._voice_data[1] = value
     @property
     def Pitch_EG_Rate_3(self):
+        """
+        The Pitch_EG_Rate_3 parameter. Valid values are between 0 and 99.
+        :return: The Pitch_EG_Rate_3 value.
+        """
         return self._voice_data[2]
     @Pitch_EG_Rate_3.setter
     def Pitch_EG_Rate_3(self, value: int):
@@ -625,6 +821,10 @@ class Voice():
         self._voice_data[2] = value
     @property
     def Pitch_EG_Rate_4(self):
+        """
+        The Pitch_EG_Rate_4 parameter. Valid values are between 0 and 99.
+        :return: The Pitch_EG_Rate_4 value.
+        """
         return self._voice_data[3]
     @Pitch_EG_Rate_4.setter
     def Pitch_EG_Rate_4(self, value: int):
@@ -633,6 +833,10 @@ class Voice():
         self._voice_data[3] = value
     @property
     def Pitch_EG_Level_1(self):
+        """
+        The Pitch_EG_Level_1 parameter. Valid values are between 0 and 99.
+        :return: The Pitch_EG_Level_1 value.
+        """
         return self._voice_data[4]
     @Pitch_EG_Level_1.setter
     def Pitch_EG_Level_1(self, value: int):
@@ -641,6 +845,10 @@ class Voice():
         self._voice_data[4] = value
     @property
     def Pitch_EG_Level_2(self):
+        """
+        The Pitch_EG_Level_2 parameter. Valid values are between 0 and 99.
+        :return: The Pitch_EG_Level_2 value.
+        """
         return self._voice_data[5]
     @Pitch_EG_Level_2.setter
     def Pitch_EG_Level_2(self, value: int):
@@ -649,6 +857,10 @@ class Voice():
         self._voice_data[5] = value
     @property
     def Pitch_EG_Level_3(self):
+        """
+        The Pitch_EG_Level_3 parameter. Valid values are between 0 and 99.
+        :return: The Pitch_EG_Level_3 value.
+        """
         return self._voice_data[6]
     @Pitch_EG_Level_3.setter
     def Pitch_EG_Level_3(self, value: int):
@@ -657,6 +869,10 @@ class Voice():
         self._voice_data[6] = value
     @property
     def Pitch_EG_Level_4(self):
+        """
+        The Pitch_EG_Level_4 parameter. Valid values are between 0 and 99.
+        :return: The Pitch_EG_Level_4 value.
+        """
         return self._voice_data[7]
     @Pitch_EG_Level_4.setter
     def Pitch_EG_Level_4(self, value: int):
@@ -665,6 +881,10 @@ class Voice():
         self._voice_data[7] = value
     @property
     def Algorithm(self):
+        """
+        The algorithm parameter. Valid values are between 0 and 31. This directly corresponds to the number seen in Dexed.
+        :return: The Algorithm value.
+        """
         return self._voice_data[8]
     @Algorithm.setter
     def Algorithm(self, value: int):
@@ -673,6 +893,10 @@ class Voice():
         self._voice_data[8] = value
     @property
     def Feedback(self):
+        """
+        The feedback parameter (loops output back to input). Valid values are between 0 and 7.
+        :return: The Feedback value.
+        """
         return self._voice_data[9]
     @Feedback.setter
     def Feedback(self, value: int):
@@ -681,6 +905,10 @@ class Voice():
         self._voice_data[9] = value
     @property
     def Oscillator_Key_Sync(self):
+        """
+        The oscillator key sync parameter. Resets and syncs oscillators when a new key is pressed (?). Valid values are 0 (no sync) or 1 (sync).
+        :return: The Oscillator_Key_Sync value.
+        """
         return self._voice_data[10]
     @Oscillator_Key_Sync.setter
     def Oscillator_Key_Sync(self, value: int):
@@ -689,6 +917,10 @@ class Voice():
         self._voice_data[10] = value
     @property
     def LFO_Speed(self):
+        """
+        The LFO speed parameter. Valid values are between 0 and 99.
+        :return: The LFO_Speed value.
+        """
         return self._voice_data[11]
     @LFO_Speed.setter
     def LFO_Speed(self, value: int):
@@ -697,6 +929,10 @@ class Voice():
         self._voice_data[11] = value
     @property
     def LFO_Delay(self):
+        """
+        The LFO delay parameter. Valid values are between 0 and 99.
+        :return: The LFO_Delay value.
+        """
         return self._voice_data[12]
     @LFO_Delay.setter
     def LFO_Delay(self, value: int):
@@ -705,6 +941,10 @@ class Voice():
         self._voice_data[12] = value
     @property
     def LFO_Pitch_Mod_Depth(self):
+        """
+        The LFO pitch modulation depth parameter. Valid values are between 0 (no modulation) and 99 (maximum modulation).
+        :return: The LFO_Pitch_Mod_Depth value.
+        """
         return self._voice_data[13]
     @LFO_Pitch_Mod_Depth.setter
     def LFO_Pitch_Mod_Depth(self, value: int):
@@ -713,6 +953,10 @@ class Voice():
         self._voice_data[13] = value
     @property
     def LFO_Amp_Mod_Depth(self):
+        """
+        The LFO amplitude modulation depth parameter. Valid values are between 0 (no modulation) and 99 (maximum modulation).
+        :return: The LFO_Amp_Mod_Depth value.
+        """
         return self._voice_data[14]
     @LFO_Amp_Mod_Depth.setter
     def LFO_Amp_Mod_Depth(self, value: int):
@@ -721,6 +965,10 @@ class Voice():
         self._voice_data[14] = value
     @property
     def LFO_Key_Sync(self):
+        """
+        The LFO key sync parameter. Resets LFO when new key is pressed. Valid values are 0 (no sync) or 1 (sync).
+        :return: The LFO_Key_Sync value.
+        """
         return self._voice_data[15]
     @LFO_Key_Sync.setter
     def LFO_Key_Sync(self, value: int):
@@ -729,6 +977,10 @@ class Voice():
         self._voice_data[15] = value
     @property
     def LFO_Waveform_Shape(self):
+        """
+        The LFO waveform shape parameter. Valid values are 0 (triangle), 1 (sawtooth down), 2 (sawtooth up), 3 (square), 4 (sine), or 5 (sample and hold; random).
+        :return: The LFO_Waveform_Shape value.
+        """
         return self._voice_data[16]
     @LFO_Waveform_Shape.setter
     def LFO_Waveform_Shape(self, value: int):
@@ -737,6 +989,10 @@ class Voice():
         self._voice_data[16] = value
     @property
     def Pitch_Mod_Sensitivity(self):
+        """
+        The pitch modulation sensitivity parameter. How much far the pitch modulation spans (?). Valid values are between 0 and 7.
+        :return: The Pitch_Mod_Sensitivity value.
+        """
         return self._voice_data[17]
     @Pitch_Mod_Sensitivity.setter
     def Pitch_Mod_Sensitivity(self, value: int):
@@ -745,6 +1001,10 @@ class Voice():
         self._voice_data[17] = value
     @property
     def Transpose(self):
+        """
+        The transpose parameter. Valid values are between 0 and 48. This is the number of semitones to transpose the voice. A value of 12 corresponds to the note C2.
+        :return: The Transpose value.
+        """
         return self._voice_data[18]
     @Transpose.setter
     def Transpose(self, value: int):
@@ -753,6 +1013,10 @@ class Voice():
         self._voice_data[18] = value
     @property
     def Voice_Name(self):
+        """
+        The name of the voice. Must be a string between 0 and 10 ASCII characters.
+        :return: The Voice_Name value.
+        """
         return bytes(self._voice_data[19:29]).decode('ascii')
     @Voice_Name.setter
     def Voice_Name(self, name: str):
@@ -765,13 +1029,13 @@ class Voice():
         self._voice_data[19:29] = list(''.join(buffer).encode('ascii'))
     @property
     def ActiveOscillators(self):
-        """Read only. Use this value in single parameter changes. To update this value, set the active attribute in each oscillator."""
+        """A bitmask of the active oscillators contained within the voice. Read only. Use this value in single parameter changes. To update this value, set the active attribute in each oscillator."""
         return int(''.join(['1' if oscillator.active else '0' for oscillator in self.get_oscillators()]), 2)
 
     def send_to_dexed(self, channel: int = 0) -> bool:
         """
         Sends the voice data to Dexed.
-        :param channel: The MIDI channel to send the data on (0-15).
+        :param channel: The DX7 'channel' to send on, if you have multiple. Default for Dexed is 0, but can be changed.
         :return: True if the data was sent successfully, False otherwise.
         """
         # Form the MIDI message
@@ -834,6 +1098,11 @@ class Voice():
         self._voice_data[index] = 0xFF & abs(value)
     
     def midi_addr_of(self, parameter: str) -> int:
+        """
+        Returns the MIDI address of the specified parameter. For use with the send_dexed_parameter() function.
+        :param parameter: The parameter name.
+        :return: The MIDI address of the parameter.
+        """
         if isinstance(parameter, int):
             return list(self._voice_parameter_indices.values())[parameter] + 21*6
         elif isinstance(parameter, str):
@@ -849,6 +1118,9 @@ class Voice():
         
 
 class Cart():
+    """
+    Represents a Dexed cart. This is the main object for working with Dexed carts. A Dexed cart consists of 32 voices.
+    """
     def __init__(self, voices: list[Voice] = None, filename: str = None):
         self._voices = [Voice(i) for i in range(32)]
         if filename is not None:
@@ -861,7 +1133,7 @@ class Cart():
 
     def read_from_file(self, filename: str) -> None:
         """
-        Reads a Dexed cart file and populates the voices list.
+        Reads a Dexed cart file and loads the data.
         :param filename: The name of the file to read from.
         :return: None
         """
@@ -887,7 +1159,7 @@ class Cart():
                 self._voices[i] = voice
     def save_to_file(self, filename: str) -> None:
         """
-        Saves the voices to a Dexed cart file.
+        Saves the cart data to a Dexed cart file.
         :param filename: The name of the file to save to.
         :return: None
         """
@@ -905,12 +1177,24 @@ class Cart():
             f.write(bytes.fromhex('F04300092000') + packed_data + ((-1*sum(packed_data)) & 0x7F).to_bytes(1, 'big') + bytes.fromhex('F7'))
     def get_voices(self) -> list[Voice]:
         """
-        Returns the list of voices.
+        Returns the list of voices contained within this cart.
         :return: The list of Voice objects.
         """
         return self._voices
     
+    def get_voices_name(self) -> list[str]:
+        """
+        Returns the list of voice names contained within this cart.
+        :return: The list of Voice names.
+        """
+        return [voice.Voice_Name for voice in self._voices]
+
     def send_to_dexed(self, channel: int = 0) -> bool:
+        """
+        Sends the cart data to Dexed.
+        :param channel: The DX7 'channel' to send on, if you have multiple. Default for Dexed is 0, but can be changed.
+        :return: True if the data was sent successfully, False otherwise.
+        """
         total_voice_data = [0 for _ in range(32)]
         header = bytes.fromhex('F04300092000')
         for i in range(32):
@@ -953,6 +1237,11 @@ class Cart():
         self._voices[index] = value
 
     def _convert_to_32_voice_dump_format(self, data: bytes) -> bytes:
+        """
+        Converts unpacked byte data to the 32 voice dump format.
+        :param data: The data to convert.
+        :return: The converted data.
+        """
         new_data = bytearray(4096)
         temp_data = bytearray(26)
         for i in range(32):
@@ -980,7 +1269,7 @@ class Cart():
     
     def _convert_from_32_voice_dump_format(self, data: bytes) -> bytes:
         """
-        Converts the data from the 32 voice dump format.
+        Converts from the 32 voice dump format to unpacked byte data.
         :param data: The data to convert.
         :return: The converted data.
         """
