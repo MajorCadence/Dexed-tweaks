@@ -89,7 +89,7 @@ def send_dexed_parameter(parameter: int, value: int | str, function_change: bool
         sub_status = 0x01 # leave this as is
         voice_change = 0x8 if function_change else 0
         message = [0xF0, 0x43, sub_status * 16 + channel, voice_change + ((parameter >> 7) & 0x03), parameter & 0x7F, value_byte, 0xF7]
-        print([(byte, bin(byte), hex(byte)) for byte in message])
+        #print([(byte, bin(byte), hex(byte)) for byte in message])
         parameter += 1
         # Send the message
         try:
@@ -1050,11 +1050,11 @@ class Voice():
         byte_count_LSB = 0x1B
 
         checksum = 0x7F & sum(chain(self.Oscillator1, self.Oscillator2, self.Oscillator3, self.Oscillator4, self.Oscillator5, self.Oscillator6, self._voice_data))
-        message = chain([0xF0, 0x43, sub_status * 16 + channel, format_n, 
+        message = list(chain([0xF0, 0x43, sub_status * 16 + channel, format_n, 
                          byte_count_MSB, byte_count_LSB], self.Oscillator1, 
                          self.Oscillator2, self.Oscillator3, self.Oscillator4, 
                          self.Oscillator5, self.Oscillator6, self._voice_data, 
-                         [checksum, 0xF7])
+                         [checksum, 0xF7]))
         #print([(byte, bin(byte), hex(byte)) for byte in message])
         #Send the message
         try:
@@ -1210,7 +1210,7 @@ class Cart():
                                     self._voices[i].voice_data_to_list())
         packed_data = self._convert_to_32_voice_dump_format(bytes([byte for voice_data in total_voice_data for byte in voice_data]))
         checksum = ((-1*sum(packed_data)) & 0x7F).to_bytes(1, 'big')
-        message = chain(header, packed_data, checksum, bytes.fromhex('F7'))
+        message = list(chain(header, packed_data, checksum, bytes.fromhex('F7')))
         #Send the message
         try:
             if midi_output_object is None:
