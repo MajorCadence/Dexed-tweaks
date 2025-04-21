@@ -14,6 +14,7 @@ Most functions have decent documentation. For more info, please look in the [exa
 
 ## Version Releases
 20/4/25 - 0.0.1
+
 21/4/25 - 0.0.2
 
 
