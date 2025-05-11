@@ -9,6 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 's
 import DexedTweaks.dexed as dt
 from DexedTweaks.dexed import Cart, Oscillator, Voice, Function
 
+# Some info printing functions:
 def print_voice_info(voice):
     print("Voice number:", voice.number)
     print("Voice name:", voice.Voice_Name)
@@ -25,9 +26,16 @@ def print_cart_info(cart):
 
 if __name__ == "__main__":
     # Example 1: Connect to MIDI (virtual port)
+
+    # Simple way to do it provided by DexedTweaks
     midi = dt.midi_connection("DexedTweaksTest", virtual=True)
-    #If using a system MIDI port, uncomment the following line:
-    # midi = dt.midi_connection("DexedTweaksTest", virtual=False, number=0)
+    
+    # If using a system MIDI port, uncomment the following line:
+    #midi = dt.midi_connection("DexedTweaksTest", virtual=False, number=0)
+
+    # Alternatively, you can set this to any rtmidi output connection object:
+    #dt.midi_output_object = <your rtmidi.MidiOut object>
+    
     print("MIDI connection established.")
 
     # Example 2: Create and modify an Oscillator
